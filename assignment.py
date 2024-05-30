@@ -2,7 +2,6 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
 import random
-from itertools import combinations
 import os
 
 def get_valid_number(prompt):
@@ -46,7 +45,7 @@ def smallest_power_of_2(n):
 # generate population
 def generate_population(size: int, power: int, dimensions: int): # size for the # of the generated chromosomes
     
-    population = []                                              # power for the of bits needed to represent the colors
+    population = []                                              # power for the # of bits needed to represent the colors
     for i in range(size):                                        # dimensions for the dimensions of the adjacency matrix (# of graph nodes)
         binary_number = []
         for j in range(power*dimensions):
@@ -65,7 +64,6 @@ def split_chromosomes(power: int, population: list):
         splitted_chromosomes.append(splitted_chromosome)
     # each pair of two bits represents the color of the node with the corresponding index in the array
 
-    print(splitted_chromosomes)
     return splitted_chromosomes
 
 
@@ -105,7 +103,6 @@ def fitness(power: int, population: list, adjacency_matrix: list):
 
     fitness_score_array = []
     splitted_chromosomes = split_chromosomes(power=power, population=population)
-    print(splitted_chromosomes)
     colors_matrix = assign_colors(splitted_chromosomes=splitted_chromosomes)
 
     # if len(colors_matrix) <= len(np_matrix):
@@ -169,7 +166,7 @@ def fitness(power: int, population: list, adjacency_matrix: list):
 # select best solutions (parents) from the current generation to descend to the following ones
 def tournament_selection(population: list, fitness_score_array: list, k: int): # k refers to the # of values compared each time
 
-    indices = [i for i in range(len(fitness_score_array))] # will save th indices of the fitness_score_array
+    indices = [i for i in range(len(fitness_score_array))] # will save the indices of the fitness_score_array
     best_parents = [] # best parents in the current population
 
     while len(indices) >= k: # continue until there are enough remaining indices
@@ -213,7 +210,7 @@ def single_point_crossover(best_parents: list):
     # check for same length
     while i < len(best_parents) - 1:
         if len(best_parents[i]) != len(best_parents[i+1]):
-            raise ValueError("Chromosomes must be of the same length")
+            raise ValueError("\nChromosomes must be of the same length")
         i+=1
     
     if len(best_parents) < 2:
@@ -233,17 +230,18 @@ def single_point_crossover(best_parents: list):
 
 def mutate(chromosomes: list, mutations_number, probability: float):
 
-    indices = [i for i in range(len(chromosomes))] # will save th indices of the chromosomes
+    if mutations_number > len(chromosomes):
+        mutations_number = len(chromosomes)
+    
+    indices = [i for i in range(len(chromosomes))] # will save thε indices of the chromosomes
     # select a random chromosome to mutate from the given list
     chromosome_index = random.randint(0, len(chromosomes)-1)
-    print(chromosome_index)
     chromosome = chromosomes[chromosome_index]
     chromosome = list(chromosomes[chromosome_index])  # convert string to list for mutability
 
     for _ in range(mutations_number):
         index = random.randrange(len(chromosome)) # pick a random bit (index) from the given chromosome
         if index in indices: # check if the index has already been mutated
-            print('chromoIndex '+str(index))
             # random generates a random float within [0,1]
             # abs(chromosome[index] - 1) flips the bit from 0 to 1 and from 1 to 0
             chromosome[index] = chromosome[index] if random.random() > probability else abs(int(chromosome[index]) - 1)
@@ -298,9 +296,9 @@ def main():
             for line in file:
                 row = list(map(int, line.strip().split()))
                 adjacency_matrix.append(row)
-        print("Adjacency matrix loaded successfully:")
+        print("\nAdjacency matrix loaded successfully:\n")
     else:
-        print(f"Error: The file '{adjacency_matrix_file}' does not exist.")
+        print(f"\nError: The file '{adjacency_matrix_file}' does not exist.")
 
     np_matrix = np.array(adjacency_matrix)
     print(np_matrix)
@@ -314,42 +312,56 @@ def main():
 
     
     # get number of colors
-    num_colors = get_valid_number("Please enter a positive integer representing the number of colors: ")
+    num_colors = get_valid_number("\nPlease enter a positive integer representing the number of colors: ")
+    chromatic_number = num_colors
+    maximum_degree = calculate_max_degree(adjacency_matrix=np_matrix)
+ 
+    while True:
+        # check if the χ(G) ≤ Δ(G)+1 condition is satisfied
+        if chromatic_number >= (maximum_degree + 1):
+            print("\nCondition not satisfied. Give valid number of colors.")       
+            num_colors = get_valid_number("\nPlease enter a positive integer representing the number of colors: ")
+            chromatic_number = num_colors
+            maximum_degree = calculate_max_degree(adjacency_matrix=np_matrix)    
+        else:
+            print('\nChromatic number '+str(chromatic_number)+' , \nMaximum degree '+str(maximum_degree))
+            print("\nCondition satisfied. Continuing the genetic algorithm.")
+            break
 
     # power is # of bits needed to represent the colors (in this case 4)
     power, bits = smallest_power_of_2(num_colors)
 
     # get population
-    P = get_valid_number("Please enter a positive integer representing the initial population: ")
+    P = get_valid_number("\nPlease enter a positive integer representing the initial population: ")
     while P < int(np_matrix.shape[1]/2) + 1:
         P = get_valid_number("Initial population should be >= [(# of nodes)/2] + 1: ")
 
     population = generate_population(size=P, power=bits, dimensions=np_matrix.shape[1])
-    print('initial population '+str(population)) 
+    print('\nΙnitial population '+str(population)) 
     
     generation = 1 # 1st generation (1st parents)
 
-    probability = get_probability("Please enter the mutation probability: ")
-    mutations_number = get_valid_number("Please enter the number of mutations to perform on a single chromosome: ")
-    max_generations = get_valid_number("Please enter the number of maximum generations that the algorithm will run: ")
-    elite_size = get_valid_number("Please enter the number of the individuals from the new population to keep after the first generation of the algorithm comes to an end (the number is reduced by 10% of its value after each generation comes to an end): ")
+    probability = get_probability("\nPlease enter the mutation probability: ")
+    mutations_number = get_valid_number("\nPlease enter the number of mutations to perform on a single chromosome: ")
+    max_generations = get_valid_number("\nPlease enter the number of maximum generations that the algorithm will run: ")
+    elite_size = get_valid_number("\nPlease enter the number of the individuals from the new population to keep after the first generation of the algorithm comes to an end (the number is reduced by 10% of its value after each generation comes to an end): ")
 
     for generation in range(max_generations):
 
-        print('current generation: '+str(generation))
-        print('remaining population '+str(population))
+        print('\nCurrent generation: '+str(generation))
+        print('\nRemaining population '+str(population))
 
         # evaluate current population
         fitness_score_array, colors_matrix = fitness(power=bits, population=population, adjacency_matrix=np_matrix)
-        print('fitness scores '+str(fitness_score_array))
+        print('\nFitness scores '+str(fitness_score_array))
 
         # select best parents
         best_parents = tournament_selection(population=population, fitness_score_array=fitness_score_array, k=2)
-        print("bestParents "+str(best_parents))
+        print("\nBest Parents "+str(best_parents))
 
-        #crossover
+        # crossover
         crossover = single_point_crossover(best_parents=best_parents)
-        print('crossovered '+str(crossover))
+        print('\nCrossovered '+str(crossover))
 
         # mutate crossovered children
         mutated_chromosomes = mutate(chromosomes=crossover, mutations_number=mutations_number, 
@@ -357,38 +369,43 @@ def main():
         print(mutated_chromosomes)
 
         # evaluate mutated individuals
-        mutated_fitness_score_array, mutated_colors_matrix = fitness(power=bits, population=mutated_chromosomes, adjacency_matrix=np_matrix)
-        print('mutated fitness scores '+str(mutated_fitness_score_array))
-
-        chromatic_number = calculate_chromatic_number(colors_matrix=colors_matrix)
-        maximum_degree = calculate_max_degree(adjacency_matrix=np_matrix)
-
-        # check if the χ(G) ≤ Δ(G)+1 condition is satisfied
-        # if chromatic_number <= maximum_degree + 1:
-        #     print('chromatic number '+str(chromatic_number)+' , maximum degree '+str(maximum_degree))
-        #     print("Condition satisfied. Stopping the genetic algorithm.")
-        #     break
-        # else:
-        #     print("Condition not satisfied. Continuing the genetic algorithm.")
+        mutated_fitness_score_array, _ = fitness(power=bits, population=mutated_chromosomes, adjacency_matrix=np_matrix)
+        print('\nMutated fitness scores '+str(mutated_fitness_score_array))
 
         population = replace_population(population=population, mutated_chromosomes=mutated_chromosomes, 
                            elite_size=elite_size, fitness_score_array=fitness_score_array, 
                            mutated_fitness_score_array=mutated_fitness_score_array)
         
         if len(population) < elite_size:
-            print('Population diminished to minimum')
+            print('\nPopulation diminished to minimum')
             break
         
         colors = colors_matrix[0]
         node_colors = [colors[node] for node in G.nodes()]
 
-        # Draw the graph with node colors and labels
+        # draw the graph with node colors and labels
         nx.draw(G, node_size=500, labels=mylabels, with_labels=True, node_color=node_colors)
         plt.title('Graph with Node Colors, Generation '+str(generation))
         plt.show()
 
         elite_size = elite_size - (int(0.1 * elite_size))
+        if elite_size < 1:
+            elite_size = 1
+
+        if fitness_score_array[0] == 0:
+            break
+        elif generation == (max_generations - 1):
+            break
+
         generation += 1
+
+    print("\nAlgorithm successfully finished on generation "+str(generation)+
+          ' with best coloring being the ' + str(colors_matrix[0])+'\n')
+    # draw the graph with node colors and labels
+    nx.draw(G, node_size=500, labels=mylabels, with_labels=True, node_color=node_colors)
+    plt.title('Best Graph Coloring')
+    plt.savefig("best_coloring.png")
+    plt.show()
 
     return fitness_score_array
 
