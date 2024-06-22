@@ -346,6 +346,7 @@ def main():
     max_generations = get_valid_number("\nPlease enter the number of maximum generations that the algorithm will run: ")
     elite_size = get_valid_number("\nPlease enter the number of the individuals from the new population to keep after the first generation of the algorithm comes to an end (the number is reduced by 10% of its value after each generation comes to an end): ")
 
+    check = 0
     for generation in range(max_generations):
 
         print('\nCurrent generation: '+str(generation))
@@ -393,7 +394,9 @@ def main():
             elite_size = 1
 
         if fitness_score_array[0] == 0:
-            break
+            check += 1
+            if check == 2:
+                break
         elif generation == (max_generations - 1):
             break
 
