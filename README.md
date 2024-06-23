@@ -1,2 +1,2 @@
 # genetic-algorithm-graph-coloring
-An implementation of a genetic on the graph coloring problem
+An implementation of a genetic algorithm on the graph coloring problem in python.
